@@ -225,6 +225,19 @@ void drawBattle(sf::RenderWindow& w, sf::Sprite& mapa,
     w.draw(txt("Seus ovos: "+std::to_string(vivos)+
                "   |   Ovos do oponente: "+std::to_string(g.op_ovos),
                17, 230, MAP_H+45));
+
+    // Posições de Ovos
+    for (auto& p : pontos()) {
+        bool occ = false;
+        for (auto& o : g.ovos) if (o.ponto_id==p.id) { occ=true; break; }
+        sf::CircleShape c(8.f); c.setOrigin(8,8); c.setPosition(p.x, p.y);
+        c.setFillColor(sf::Color(0,200,100,140));
+        c.setOutlineColor(sf::Color::White); c.setOutlineThickness(1);
+        w.draw(c);
+        // Label do ponto
+        sf::Text lbl = txt(p.sigla, 11, p.x+14, p.y-6, sf::Color(240,240,240));
+        w.draw(lbl);
+    }
 }
 
 // ── Tela GAMEOVER ────────────────────────────────────────────

@@ -96,7 +96,7 @@ struct Game {
     std::vector<Ovo> ovos;
     int op_ovos = MAX_OVOS;
 
-    int ammo[3] = {5, 3, 1};   // PRECISAO, PADRAO, AMPLIADA
+    int ammo[3] = {8, 4, 2};   // PRECISAO, PADRAO, AMPLIADA
     int arma    = 1;
 
     std::vector<Explosion> explosions;

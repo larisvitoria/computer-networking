@@ -40,13 +40,27 @@ struct Net {
 
     ~Net() { close(srv); close(peer); }
 
+    // Funcao Server Side
     bool startServer() {
+        // Cria o socket usando IPv4 e TCP
         srv = ::socket(AF_INET, SOCK_STREAM, 0);
-        int opt = 1; setsockopt(srv, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        sockaddr_in a{}; a.sin_family = AF_INET; a.sin_port = htons(PORT);
+        // Cria a variável que serve de flag usada abaixo
+        int opt = 1;
+        // Configura o socket pra reusar o endereço em caso em crash
+        setsockopt(srv, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        // Cria a estrutura vazia para armazenar dados do servidor
+        sockaddr_in a{};
+        a.sin_family = AF_INET; // Endereços IPv4 
+        a.sin_port = htons(PORT); // Porta do servidor
+        // Servidor aceita conexão de qualquer interface de rede da máquina
         a.sin_addr.s_addr = INADDR_ANY;
+        // Atrela o socket criado ao IP configurado acima
+        // Coloca o socket no modo de escuta e permite 1 conexão na fila de espera
+        // Se um dos dois falhar, retorna falsa
         if (bind(srv, (sockaddr*)&a, sizeof(a)) || listen(srv, 1)) return false;
+        // Pega as flags atuais e adiciona a não bloqueante (assíncrona)
         fcntl(srv, F_SETFL, fcntl(srv, F_GETFL) | O_NONBLOCK);
+        // Se passou por todos os passos, retorna a flag true
         return true;
     }
 
@@ -59,24 +73,40 @@ struct Net {
     }
 
     bool connect(const std::string& ip) {
+        // Se já estiver conectado, não faz nada
         if (connected) return true;
 #ifndef DEV_MODE
         if (ip == "127.0.0.1") { error = "Loopback bloqueado."; return false; }
 #endif
+        // Verifica se é valor inicial (socket não existe)
         if (peer < 0) {
+            // Cria o socket usando IPv4 e TCP
+            // peer armazena o ID do socket
             peer = ::socket(AF_INET, SOCK_STREAM, 0);
+            // Transforma o socket do cliente em não bloqueante
             fcntl(peer, F_SETFL, fcntl(peer, F_GETFL) | O_NONBLOCK);
         }
-        sockaddr_in a{}; a.sin_family = AF_INET; a.sin_port = htons(PORT);
+        // Cria a estrutura vazia do servidor
+        sockaddr_in a{};
+        a.sin_family = AF_INET; // IPv4
+        a.sin_port = htons(PORT); // Porta do servidor de destino 
+        // Converter o IP digitado para binário
         inet_pton(AF_INET, ip.c_str(), &a.sin_addr);
+        // Tenta conectar com o IP e porta
         int r = ::connect(peer, (sockaddr*)&a, sizeof(a));
+        // Se conectou, já existia conexão
         if (r == 0 || errno == EISCONN) { connected = true; return true; }
+        // Verifica flags em progresso
         if (errno == EINPROGRESS || errno == EALREADY) {
             // Checa se já conectou via SO_ERROR
-            int err = 0; socklen_t len = sizeof(err);
+            int err = 0;
+            socklen_t len = sizeof(err);
+            // Busca opções do socket para checar o erro atual
             getsockopt(peer, SOL_SOCKET, SO_ERROR, &err, &len);
+            // Se não retornou erros, a conexão foi bem sucedida
             if (err == 0 && errno == EISCONN) { connected = true; return true; }
         }
+        // Se chegou aqui, a conexão não foi feita
         return false;
     }
 
